@@ -39,3 +39,11 @@ npm start
 - Read Message History
 
 No slash command registration and no Interactions Endpoint URL are used.
+
+
+## v2.5.0 visual layout
+- Restores one compact card per equipment slot.
+- Style image LEFT, actual image RIGHT, equal 180x180 display boxes.
+- The pair is rendered as one wide 760px strip so Discord displays it at the card's full image width.
+- Keeps Style/Actual clickable text and Rune/Bezel/Plate/Gem/Sharpening/Symbol text/icons.
+- Removes stats and durability.
