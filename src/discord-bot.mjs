@@ -10,10 +10,10 @@ import {
   validateProfileUrl,
   fetchProfileUrl,
   buildProfileData,
-  addActualArmorImages
+  enrichActualArmorImages
 } from "./wod-core.mjs";
 
-import { buildDiscordPayloads } from "./discord-format.mjs";
+import { buildDiscordPages, BOT_VERSION } from "./discord-format.mjs";
 
 const DISCORD_TOKEN=(process.env.DISCORD_TOKEN || "").trim();
 
@@ -82,7 +82,7 @@ async function handleGear(message, rawUrl){
     const exactUrl=validateProfileUrl(rawUrl);
     const {html}=await fetchProfileUrl(exactUrl);
     const data=buildProfileData(exactUrl,html);
-    await addActualArmorImages(data);
+    await enrichActualArmorImages(data);
 
     if(!data.equipped.length){
       await progress.edit({
@@ -96,12 +96,11 @@ async function handleGear(message, rawUrl){
       return;
     }
 
-    const pages=buildDiscordPayloads(data);
+    const pages=buildDiscordPages(data);
     const first=pages[0];
 
     await progress.edit({
       ...discordPayloadToReply(first),
-      content:null,
       allowedMentions:{repliedUser:false}
     });
 
@@ -131,7 +130,7 @@ async function handleGear(message, rawUrl){
 }
 
 client.once("ready",()=>{
-  console.log(`Discord bot online as ${client.user.tag}`);
+  console.log(`Discord bot online as ${client.user.tag} · GearMate v${BOT_VERSION}`);
   console.log("Command: /gear <full War of Dragons profile URL>");
 });
 
