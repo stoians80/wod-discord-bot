@@ -4,7 +4,7 @@ import sharp from "sharp";
 async function fetchBuffer(url){
   if(!url)return null;
   try{
-    const r=await fetch(url,{headers:{"user-agent":"Mozilla/5.0 (compatible; WOD-GearMate/2.5.2)"}});
+    const r=await fetch(url,{headers:{"user-agent":"Mozilla/5.0 (compatible; WOD-GearMate/2.5.3)"}});
     if(!r.ok)return null;
     return Buffer.from(await r.arrayBuffer());
   }catch{return null}

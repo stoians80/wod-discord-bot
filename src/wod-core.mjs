@@ -352,7 +352,7 @@ async function resolveActualArtifactImage(item){
   try{
     const r=await fetch(`${WOD}/artifact_info.php?artifact_id=${id}`,{
       headers:{
-        "user-agent":"Mozilla/5.0 (compatible; WOD-GearMate/2.5.2)",
+        "user-agent":"Mozilla/5.0 (compatible; WOD-GearMate/2.5.3)",
         "accept":"text/html,application/xhtml+xml"
       },
       redirect:"follow"

@@ -59,3 +59,12 @@ No slash command registration and no Interactions Endpoint URL are used.
 - Official item-page image extraction is now item-title aware.
 - Strongly prefers the image nearest the actual item's title.
 - Penalizes rune/symbol/bezel/plate/enchantment assets so they are not used as the real equipment picture.
+
+
+## v2.5.3 owner commands
+Set `BOT_OWNER_ID` in Railway to your Discord user ID.
+
+- `/guilds` — owner-only; lists every server GearMate is currently connected to, with server ID, member count, and owner ID.
+- `/leaveguild <server ID>` — owner-only; makes GearMate leave that server immediately.
+- `!guilds` and `!leaveguild` are accepted as fallbacks.
+- Non-owner attempts are ignored.
