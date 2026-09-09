@@ -1,0 +1,16 @@
+{
+  "name": "wod-discord-message-bot",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.mjs",
+    "check": "node --check src/wod-core.mjs && node --check src/discord-format.mjs && node --check src/discord-bot.mjs && node --check src/index.mjs"
+  },
+  "dependencies": {
+    "discord.js": "^14.22.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
