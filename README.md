@@ -47,3 +47,15 @@ No slash command registration and no Interactions Endpoint URL are used.
 - The pair is rendered as one wide 760px strip so Discord displays it at the card's full image width.
 - Keeps Style/Actual clickable text and Rune/Bezel/Plate/Gem/Sharpening/Symbol text/icons.
 - Removes stats and durability.
+
+
+## v2.5.1 parser fix
+- Fixes `Ringmail` armor being mistaken for a `Ring`.
+- Rings use verified kind_id 76/221; amulets use kind_id 25.
+- Text fallback is only used when kind_id is absent, and `ring` must be a whole word.
+
+
+## v2.5.2 image resolver fix
+- Official item-page image extraction is now item-title aware.
+- Strongly prefers the image nearest the actual item's title.
+- Penalizes rune/symbol/bezel/plate/enchantment assets so they are not used as the real equipment picture.

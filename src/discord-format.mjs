@@ -1,5 +1,5 @@
 
-export const BOT_VERSION="2.5.0";
+export const BOT_VERSION="2.5.2";
 
 function decodeTextEntities(s){
   return String(s??"")

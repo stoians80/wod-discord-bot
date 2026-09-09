@@ -147,11 +147,20 @@ function slotInfo(x){
     return { key:"slot:banner-totem", label:"Banner / Totem", pairable:true };
   }
 
-  // Jewelry can be action=info/use on a profile. Keep exact game slot identity.
-  if (/amulet|necklace|амулет/.test(k)) {
+  // Jewelry: prefer verified kind_id values. Do NOT use a raw /ring/ substring,
+  // because armor names such as "Ringmail Vest" and "Ringmail Boots" are not rings.
+  if (kid==="25") {
     return { key:"slot:amulet", label:"Amulet", pairable:true, multi:true, max:2 };
   }
-  if (/ring|кольц|печат/.test(k)) {
+  if (kid==="76" || kid==="221") {
+    return { key:"slot:ring", label:"Ring", pairable:true, multi:true, max:2 };
+  }
+
+  // Only use text fallback if the page omitted kind_id entirely.
+  if (!kid && /\b(?:amulet|necklace)\b|амулет/i.test(k)) {
+    return { key:"slot:amulet", label:"Amulet", pairable:true, multi:true, max:2 };
+  }
+  if (!kid && /\bring\b|кольц|печат/i.test(k)) {
     return { key:"slot:ring", label:"Ring", pairable:true, multi:true, max:2 };
   }
 
@@ -268,9 +277,16 @@ function groupEquipment(items){
   return groups;
 }
 
-function extractActualArtifactImage(html){
+function extractActualArtifactImage(html,itemTitle=""){
   const source=String(html||"");
   const candidates=[];
+  const titleNeedle=decodeEntities(String(itemTitle||"")).replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().toLowerCase();
+  const sourcePlain=decodeEntities(source).replace(/<[^>]*>/g," ").replace(/\s+/g," ").toLowerCase();
+  const titlePos=titleNeedle ? sourcePlain.indexOf(titleNeedle) : -1;
+
+  const rawTitlePos = titleNeedle
+    ? source.toLowerCase().indexOf(titleNeedle)
+    : -1;
 
   function add(raw,score,index=0){
     raw=decodeEntities(String(raw||"")).replace(/&amp;/g,"&").trim().replace(/^['"]|['"]$/g,"");
@@ -286,6 +302,22 @@ function extractActualArtifactImage(html){
     if(/\/images\/items?\//.test(low))score+=160;
     if(/artifact|item/.test(low))score+=45;
     if(/\.(?:png|gif|jpe?g|webp)(?:\?|$)/i.test(low))score+=20;
+
+    // Enhancement assets can live on the same item page. Penalize them unless
+    // the image is also very close to the item's own title.
+    if(/rune|symbol|bezel|plate|enchant|magic|socket|setting/.test(low))score-=180;
+
+    // Prefer the image physically nearest the equipment title in the official page.
+    // This is the key fix for bows where the old generic scorer could pick a
+    // rune/symbol image elsewhere on the page.
+    if(rawTitlePos>=0){
+      const d=Math.abs(index-rawTitlePos);
+      if(d<1200)score+=420;
+      else if(d<3000)score+=260;
+      else if(d<7000)score+=120;
+      else if(d>18000)score-=80;
+    }
+
     candidates.push({url,score,index});
   }
 
@@ -320,12 +352,12 @@ async function resolveActualArtifactImage(item){
   try{
     const r=await fetch(`${WOD}/artifact_info.php?artifact_id=${id}`,{
       headers:{
-        "user-agent":"Mozilla/5.0 (compatible; WOD-GearMate/2.5.0)",
+        "user-agent":"Mozilla/5.0 (compatible; WOD-GearMate/2.5.2)",
         "accept":"text/html,application/xhtml+xml"
       },
       redirect:"follow"
     });
-    if(r.ok)image=extractActualArtifactImage(await r.text());
+    if(r.ok)image=extractActualArtifactImage(await r.text(), item?.title||"");
   }catch{}
   actualImageCache.set(id,image);
   return image;
