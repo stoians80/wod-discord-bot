@@ -1,5 +1,5 @@
 
-export const BOT_VERSION="2.3.0";
+export const BOT_VERSION="2.4.0";
 
 function decodeTextEntities(s){
   return String(s??"")
@@ -74,42 +74,48 @@ function flattenStats(v,out=[],prefix=""){
   if(text)out.push(prefix?`${prefix}: ${text}`:text);
   return out;
 }
-function statLines(x){
-  if(!x)return [];
-  const out=[];
-  if(x.dur)out.push(`**Durability:** ${md(x.dur)}`);
-  const raw=x.skills_e||x.skills;
-  const stats=flattenStats(raw).filter(s=>s && !/^\[object Object\]$/i.test(s));
-  if(stats.length)out.push(`**Stats:** ${stats.map(md).join(" · ")}`);
-  return out;
+function styleDescription(g){
+  return g.style ? `🎭 **Style:** ${linkItem(g.style)}` : "";
 }
-function body(g){
-  const lines=[];
-  if(g.style)lines.push(`🎭 **Style:** ${linkItem(g.style)}`);
-  if(g.real){
-    lines.push(`🛡️ **Actual:** ${linkItem(g.real)}`);
-    for(const s of statLines(g.real))lines.push(`↳ ${s}`);
-    for(const e of enhancementLines(g.real))lines.push(`↳ ${e}`);
-  }
+function actualDescription(g){
+  if(!g.real)return "";
+  const lines=[`🛡️ **Actual:** ${linkItem(g.real)}`];
+  for(const e of enhancementLines(g.real))lines.push(`↳ ${e}`);
   return lines.join("\n").slice(0,4096);
 }
 
+
 export function buildDiscordPages(data){
   const embeds=[];
+
   for(const g of data.groups){
     if(!g.style&&!g.real)continue;
-    const e={
-      title:String(g.slot||"Equipment").slice(0,256),
-      description:body(g),
-      color:0x167c79
-    };
-    if(g.style?._styleImage){
-      e.author={name:"Style",icon_url:g.style._styleImage};
+    const slot=String(g.slot||"Equipment").slice(0,256);
+
+    // Style first, full-width image. No tiny author icon / thumbnail.
+    if(g.style){
+      const e={
+        title:slot,
+        description:styleDescription(g),
+        color:0x167c79
+      };
+      if(g.style._styleImage)e.image={url:g.style._styleImage};
+      embeds.push(e);
     }
-    if(g.real?._armorImage)e.thumbnail={url:g.real._armorImage};
-    embeds.push(e);
+
+    // Actual directly below style, also full-width image.
+    // Only Rune / Bezel / Plate / Gem / Sharpening / Symbol information remains.
+    if(g.real){
+      const e={
+        description:actualDescription(g),
+        color:0x167c79
+      };
+      if(g.real._armorImage)e.image={url:g.real._armorImage};
+      embeds.push(e);
+    }
   }
 
+  // Discord allows max 10 embeds per message.
   const pages=[];
   for(let i=0;i<embeds.length;i+=10){
     pages.push({
