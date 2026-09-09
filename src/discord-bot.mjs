@@ -10,7 +10,7 @@ import {
   validateProfileUrl,
   fetchProfileUrl,
   buildProfileData,
-  enrichActualArmorImages
+  enrichEquipmentImages
 } from "./wod-core.mjs";
 
 import { buildDiscordPages, BOT_VERSION } from "./discord-format.mjs";
@@ -82,7 +82,7 @@ async function handleGear(message, rawUrl){
     const exactUrl=validateProfileUrl(rawUrl);
     const {html}=await fetchProfileUrl(exactUrl);
     const data=buildProfileData(exactUrl,html);
-    await enrichActualArmorImages(data);
+    await enrichEquipmentImages(data);
 
     if(!data.equipped.length){
       await progress.edit({

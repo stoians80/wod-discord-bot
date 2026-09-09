@@ -320,7 +320,7 @@ async function resolveActualArtifactImage(item){
   try{
     const r=await fetch(`${WOD}/artifact_info.php?artifact_id=${id}`,{
       headers:{
-        "user-agent":"Mozilla/5.0 (compatible; WOD-GearMate/2.2.0)",
+        "user-agent":"Mozilla/5.0 (compatible; WOD-GearMate/2.3.0)",
         "accept":"text/html,application/xhtml+xml"
       },
       redirect:"follow"
@@ -331,9 +331,14 @@ async function resolveActualArtifactImage(item){
   return image;
 }
 
-async function enrichActualArmorImages(data){
+async function enrichEquipmentImages(data){
   await Promise.all(data.groups.map(async g=>{
-    if(g.real)g.real._armorImage=await resolveActualArtifactImage(g.real);
+    const [styleImage,actualImage]=await Promise.all([
+      g.style ? resolveActualArtifactImage(g.style) : null,
+      g.real ? resolveActualArtifactImage(g.real) : null
+    ]);
+    if(g.style)g.style._styleImage=styleImage;
+    if(g.real)g.real._armorImage=actualImage;
   }));
   return data;
 }
@@ -421,5 +426,5 @@ export {
   slotInfo,
   groupEquipment,
   publicItem,
-  enrichActualArmorImages
+  enrichEquipmentImages
 };

@@ -1,14 +1,22 @@
 
-export const BOT_VERSION="2.2.0";
+export const BOT_VERSION="2.3.0";
 
-function clean(v){
-  return String(v ?? "")
-    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi," ")
-    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi," ")
-    .replace(/<[^>]+>/g," ")
+function decodeTextEntities(s){
+  return String(s??"")
+    .replace(/&#x([0-9a-f]+);/gi,(_,h)=>String.fromCodePoint(parseInt(h,16)))
+    .replace(/&#([0-9]+);/g,(_,n)=>String.fromCodePoint(parseInt(n,10)))
     .replace(/&nbsp;/gi," ")
     .replace(/&amp;/gi,"&")
     .replace(/&quot;/gi,'"')
+    .replace(/&#39;|&apos;/gi,"'")
+    .replace(/&lt;/gi,"<")
+    .replace(/&gt;/gi,">");
+}
+function clean(v){
+  return decodeTextEntities(String(v ?? ""))
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi," ")
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi," ")
+    .replace(/<[^>]+>/g," ")
     .replace(/\s+/g," ")
     .trim();
 }
@@ -45,15 +53,34 @@ function enhancementLines(x){
   if(syms.length)out.push(`✨ **Symbol:** ${syms.map(md).join(", ")}`);
   return out;
 }
+function flattenStats(v,out=[],prefix=""){
+  if(v==null || v==="")return out;
+  if(Array.isArray(v)){
+    for(const item of v)flattenStats(item,out,prefix);
+    return out;
+  }
+  if(typeof v==="object"){
+    for(const [k,val] of Object.entries(v)){
+      const key=clean(k).replace(/_/g," ");
+      if(val!=null && typeof val==="object")flattenStats(val,out,key);
+      else{
+        const value=clean(val);
+        if(value && value!=="0" && value!=="false")out.push(`${key}: ${value}`);
+      }
+    }
+    return out;
+  }
+  const text=clean(v);
+  if(text)out.push(prefix?`${prefix}: ${text}`:text);
+  return out;
+}
 function statLines(x){
   if(!x)return [];
   const out=[];
   if(x.dur)out.push(`**Durability:** ${md(x.dur)}`);
   const raw=x.skills_e||x.skills;
-  if(raw){
-    const s=clean(raw);
-    if(s)out.push(`**Stats:** ${md(s)}`);
-  }
+  const stats=flattenStats(raw).filter(s=>s && !/^\[object Object\]$/i.test(s));
+  if(stats.length)out.push(`**Stats:** ${stats.map(md).join(" · ")}`);
   return out;
 }
 function body(g){
@@ -76,6 +103,9 @@ export function buildDiscordPages(data){
       description:body(g),
       color:0x167c79
     };
+    if(g.style?._styleImage){
+      e.author={name:"Style",icon_url:g.style._styleImage};
+    }
     if(g.real?._armorImage)e.thumbnail={url:g.real._armorImage};
     embeds.push(e);
   }
