@@ -267,6 +267,81 @@ function groupEquipment(items){
 
   return groups;
 }
+
+function extractArtifactImage(html){
+  const source=String(html||"");
+  const candidates=[];
+
+  function add(raw,score,index=0){
+    raw=decodeEntities(String(raw||"")).replace(/&amp;/g,"&").trim()
+      .replace(/^['"]|['"]$/g,"");
+    if(!raw || /^data:/i.test(raw))return;
+    let url=raw;
+    try{url=new URL(raw,WOD).toString();}catch{}
+    const low=url.toLowerCase();
+    if(/tbl-shp|corner|spacer|\/d\.gif|m_game|logo|arrow|button|menu|rating|online|forum|avatar|clan/.test(low))score-=500;
+    if(/\/images\/data\/artifacts?\//.test(low))score+=220;
+    if(/\/images\/artifacts?\//.test(low))score+=200;
+    if(/\/images\/data\/items?\//.test(low))score+=180;
+    if(/\/images\/items?\//.test(low))score+=160;
+    if(/\/images\/enchants?\//.test(low))score+=120;
+    if(/artifact|artikul|rune|bezel|symbol|plate|oprava|enchants?/.test(low))score+=45;
+    if(/\.(?:png|gif|jpe?g|webp)(?:\?|$)/i.test(low))score+=20;
+    candidates.push({url,score,index});
+  }
+
+  const imgRe=/<img\b[^>]*>/gi;
+  let m;
+  while((m=imgRe.exec(source))){
+    const tag=m[0];
+    for(const attr of ["src","data-src","data-original","data-lazy-src"]){
+      const a=tag.match(new RegExp("\\b"+attr+"=[\"']([^\"']+)[\"']","i"));
+      if(a)add(a[1],40,m.index);
+    }
+    const ss=tag.match(/\bsrcset=["']([^"']+)["']/i);
+    if(ss)for(const part of ss[1].split(","))add(part.trim().split(/\s+/)[0],35,m.index);
+  }
+
+  const urlRe=/url\(\s*(['"]?)([^)'"]+)\1\s*\)/gi;
+  while((m=urlRe.exec(source)))add(m[2],75,m.index);
+
+  const directRe=/["']([^"']+\.(?:png|gif|jpe?g|webp)(?:\?[^"']*)?)["']/gi;
+  while((m=directRe.exec(source)))add(m[1],15,m.index);
+
+  candidates.sort((a,b)=>b.score-a.score || a.index-b.index);
+  return candidates.find(x=>x.score>0)?.url||null;
+}
+
+const actualImageCache=new Map();
+
+async function resolveActualItemImage(item){
+  const id=String(item?.id||item?.artifact_id||"").replace(/\D/g,"");
+  if(!id)return null;
+  if(actualImageCache.has(id))return actualImageCache.get(id);
+
+  let image=null;
+  try{
+    const r=await fetch(`${WOD}/artifact_info.php?artifact_id=${id}`,{
+      headers:{
+        "user-agent":"Mozilla/5.0 (compatible; WOD-Discord-Bot/2.1)",
+        "accept":"text/html,application/xhtml+xml"
+      },
+      redirect:"follow"
+    });
+    if(r.ok)image=extractArtifactImage(await r.text());
+  }catch{}
+
+  actualImageCache.set(id,image);
+  return image;
+}
+
+async function addActualArmorImages(data){
+  await Promise.all(data.groups.map(async g=>{
+    if(g.real)g.real._armorImage=await resolveActualItemImage(g.real);
+  }));
+  return data;
+}
+
 function publicItem(x){
   if(!x)return null;
   return {...x,_classification:isStyle(x)?"style":"real",_slot:slotInfo(x).label};
@@ -349,5 +424,6 @@ export {
   isStyle,
   slotInfo,
   groupEquipment,
-  publicItem
+  publicItem,
+  addActualArmorImages
 };

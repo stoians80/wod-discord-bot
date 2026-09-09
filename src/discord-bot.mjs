@@ -9,10 +9,11 @@ import {
 import {
   validateProfileUrl,
   fetchProfileUrl,
-  buildProfileData
+  buildProfileData,
+  addActualArmorImages
 } from "./wod-core.mjs";
 
-import { buildDiscordPayload } from "./discord-format.mjs";
+import { buildDiscordPayloads } from "./discord-format.mjs";
 
 const DISCORD_TOKEN=(process.env.DISCORD_TOKEN || "").trim();
 
@@ -81,6 +82,7 @@ async function handleGear(message, rawUrl){
     const exactUrl=validateProfileUrl(rawUrl);
     const {html}=await fetchProfileUrl(exactUrl);
     const data=buildProfileData(exactUrl,html);
+    await addActualArmorImages(data);
 
     if(!data.equipped.length){
       await progress.edit({
@@ -94,13 +96,21 @@ async function handleGear(message, rawUrl){
       return;
     }
 
-    const payload=buildDiscordPayload(data);
+    const pages=buildDiscordPayloads(data);
+    const first=pages[0];
 
     await progress.edit({
-      ...discordPayloadToReply(payload),
+      ...discordPayloadToReply(first),
       content:null,
       allowedMentions:{repliedUser:false}
     });
+
+    for(const page of pages.slice(1)){
+      await message.channel.send({
+        ...discordPayloadToReply(page),
+        allowedMentions:{repliedUser:false}
+      });
+    }
 
   }catch(e){
     const msg=`❌ ${String(e?.message || e).slice(0,1800)}`;

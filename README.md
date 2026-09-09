@@ -39,3 +39,7 @@ npm start
 - Read Message History
 
 No slash command registration and no Interactions Endpoint URL are used.
+
+
+## v2.1 visual patch
+Actual equipment now keeps the existing per-slot content and adds the actual armor/item artwork as the slot embed thumbnail. All parsing, ordering, Rune/Bezel/Plate/Symbol text and official item links are preserved.
